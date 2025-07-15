@@ -14,6 +14,10 @@ const path = require('path');
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 
+// prisma.$connect().then(() => console.log("DB connected")).catch(console.error);
+
+
+
 
 
 app.use(cors());
@@ -52,5 +56,13 @@ app.use('/api',wishlistRoutes);
 
 const reviewRoutes = require('./routes/reviewRoutes');
 app.use('/api/reviews',reviewRoutes)
+
+// const aiSearchRoute = require('./routes/aiSearch');
+// app.use('/api/ai-Search' , aiSearchRoute)
+
+
+const aiSearchRoute = require('./routes/aiSearch.js');
+app.use('/api/ai-search', aiSearchRoute);
+
     
 // eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4MTI2YTVjMTk3NjU5NmNmOWMyYTgyMyIsImlhdCI6MTc0NjAzNzM0MSwiZXhwIjoxNzQ2MTIzNzQxfQ.1lodWsf8v_NU3_6Li5xZ2nvY25Fx-mRF8AChDUk-hEM

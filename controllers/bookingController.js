@@ -7,8 +7,14 @@ exports.createBooking = async (req, res) => {
   const { propertyId, startDate, endDate } = req.body;
   const userId = req.user.id;
 
+
+
   try {
     // Optional: check overlapping bookings
+
+    if (new Date(endDate) <= new Date(startDate)) {
+      return res.status(400).json({ message: 'End date must be after start date' });
+    }
     const overlapping = await prisma.booking.findFirst({
       where: {
         propertyId,
@@ -38,8 +44,32 @@ exports.createBooking = async (req, res) => {
 };
 
 // 2. Get bookings for current user
+// exports.getUserBookings = async (req, res) => {
+//   try {
+//     const bookings = await prisma.booking.findMany({
+//       where: { userId: req.user.id },
+//       include: {
+//         property: true
+//       },
+//       orderBy: { createdAt: 'desc' }
+//     });
+//     res.json(bookings);
+//   } catch (error) {
+//     res.status(500).json({ message: 'Failed to fetch bookings', error: error.message });
+//   }
+// };
+
+
+
 exports.getUserBookings = async (req, res) => {
   try {
+    // console.log("req.user →", req.user); // add this
+
+    if (!req.user?.id) {
+      return res.status(401).json({ message: 'Unauthorized access' });
+    }
+
+
     const bookings = await prisma.booking.findMany({
       where: { userId: req.user.id },
       include: {
@@ -52,6 +82,7 @@ exports.getUserBookings = async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch bookings', error: error.message });
   }
 };
+
 
 // 3. Get bookings for properties the user owns
 exports.getHostBookings = async (req, res) => {

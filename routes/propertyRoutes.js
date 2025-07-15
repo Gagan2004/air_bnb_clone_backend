@@ -11,6 +11,8 @@
 
 
 // routes/propertyRoutes.js
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 const express = require('express');
 const router  = express.Router();
 const protect = require('../middleware/authMiddleware');
@@ -32,11 +34,57 @@ router
   .route('/')
   .get(getAllProperties)      // Public: anyone can view listings
   .post(protect, ...createProperty); // Protected: only logged-in users
+  
 
+  router.get('/search', async (req, res) => {
+    const { location, price, guests, amenities } = req.query;
+  
+    const query = {};
+    const where = {};
+
+    if (location) {
+      where.location = { contains: location, mode: 'insensitive' };
+    }
+  
+    // Price filter (≤)
+    if (price) {
+      where.price = { lte: parseFloat(price) };
+    }
+  
+    // Guests filter (≥)
+    if (guests) {
+      where.guestCount = { gte: parseInt(guests) };
+    }
+  
+    // Amenities filter (must include all)
+    if (amenities) {
+      const list = amenities.split(',').map(a => a.trim().toLowerCase());
+      where.amenities = { hasEvery: list }; // Requires Prisma MongoDB connector ≥ 4.3
+    }
+  
+    // Step 2: Execute the query
+    try {
+      const properties = await prisma.property.findMany({
+        where, // Filters go here
+      });
+  
+      res.json({ properties });
+    } catch (err) {
+      console.error('Prisma error:', err);
+      res.status(500).json({ error: 'Search failed' });
+    }
+
+  
+  });
+  
+  
   router
   .route('/:id')
   .get(getPropertyById)
   .put(protect, ...updateProperty);  // ← protected update
+
+
+
 
 
 
