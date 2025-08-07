@@ -10,14 +10,14 @@ require('dotenv').config();
 const JWT_SECRET = process.env.JWT_SECRET;
 
 exports.register = async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password  , role} = req.body;
   try {
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) return res.status(400).json({ message: 'User already exists' });
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
-      data: { name, email, password: hashedPassword },
+      data: { name, email, password: hashedPassword , role},
     });
 
     const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: '1d' });
@@ -37,7 +37,7 @@ exports.login = async (req, res) => {
     if (!match) return res.status(401).json({ message: 'Invalid credentials' });
 
     const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: '1d' });
-    res.status(200).json({ token });
+    res.status(200).json({ token , user:{role:user.role} });
   } catch (err) {
     res.status(500).json({ message: 'Login failed', error: err.message });
   }

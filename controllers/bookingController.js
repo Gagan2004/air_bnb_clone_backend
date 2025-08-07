@@ -34,7 +34,7 @@ exports.createBooking = async (req, res) => {
         userId,
         startDate: new Date(startDate),
         endDate:   new Date(endDate),
-        status:"CONFIRMED"
+        
       }
     });
     res.status(201).json(booking);
@@ -141,19 +141,47 @@ exports.getBookingById = async (req, res) => {
 };
 
 
+// exports.updateBookingStatus = async (req, res) => {
+//   const { id } = req.params;
+//   const { status } = req.body;
+
+//   try {
+//     const updated = await prisma.booking.update({
+//       where: { id },
+//       data: { status }
+//     });
+//     res.json(updated);
+//   } catch (error) {
+//     res.status(500).json({ message: 'Failed to update booking status', error: error.message });
+//   }
+// };
+
+
 exports.updateBookingStatus = async (req, res) => {
   const { id } = req.params;
-  const { status } = req.body;
+  const { status } = req.body; // "confirmed" or "rejected"
+  if (!['confirmed','rejected'].includes(status)) {
+    return res.status(400).json({ message: 'Invalid status' });
+  }
 
   try {
+    // ensure booking exists and belongs to one of your properties
+    const booking = await prisma.booking.findUnique({
+      where: { id },
+      include: { property: true }
+    });
+    if (!booking) return res.status(404).json({ message: 'Booking not found' });
+    if (booking.property.userId !== req.user.id) {
+      return res.status(403).json({ message: 'Not your booking' });
+    }
+
     const updated = await prisma.booking.update({
       where: { id },
       data: { status }
     });
     res.json(updated);
-  } catch (error) {
-    res.status(500).json({ message: 'Failed to update booking status', error: error.message });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to update booking', error: err.message });
   }
 };
-
 

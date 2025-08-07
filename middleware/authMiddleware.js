@@ -40,7 +40,9 @@ const protect = async (req, res, next) => {
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, JWT_SECRET);
 
-    const user = await prisma.user.findUnique({ where: { id: decoded.id } });
+    const user = await prisma.user.findUnique({ where: { id: decoded.id } , 
+        select: { id: true, name: true, email: true, role: true }
+    });
     if (!user) {
       return res.status(401).json({ message: 'User not found' });
     }

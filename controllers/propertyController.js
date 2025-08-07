@@ -3,29 +3,7 @@
   const parser = require('../middleware/upload');
 
 
-  // exports.createProperty = async (req, res) => {
-  //   const { title, description  , image, price, location } = req.body;
-  //   try {
-  //     const property = await prisma.property.create({
-  //       data: {
-  //         title,
-  //         description,
-  //         image,
-  //         price,
-  //         location,
-  //         userId: req.user.id, // from auth middleware
-  //       },
-  //     });
-  //     res.status(201).json(property);
-  //   } catch (error) {
-  //     console.error("🛠️ createProperty payload:", req.body);
-  //     console.error("🔥 createProperty error:", error);
-  //     res
-  //       .status(500)
-  //       .json({ message: "Failed to create property", error: error.message });
-  //   }
-  // };
-
+  
 
   exports.createProperty = [parser.array('images', 5), async (req, res) => {
     try {
@@ -89,7 +67,15 @@
 
     } catch (error) {
 
-      res.status(500).json({ message: 'Failed to fetch properties', error: error.message });
+      // res.status(500).json({ message: 'Failed to fetch properties', error: error.message });
+     
+     
+      console.error('getAllProperties error:', error);
+    res.status(500).json({
+      message: 'Failed to fetch properties',
+      error: error.message,
+      stack: error.stack,       // <— add this line
+    });
     }
   };
 
@@ -122,33 +108,7 @@
   };
 
 
-  // exports.updateProperty = async (req, res) => {
-  //   const { id } = req.params;
-  //   const updates = req.body; // e.g. { title, price, location, ... }
-
-  //   try {
-  //     // 1) Fetch the existing property
-  //     const existing = await prisma.property.findUnique({ where: { id } });
-  //     if (!existing) {
-  //       return res.status(404).json({ message: 'Property not found' });
-  //     }
-
-  //     // 2) Check ownership
-  //     if (existing.userId !== req.user.id) {
-  //       return res.status(403).json({ message: 'Not authorized to update this property' });
-  //     }
-
-  //     // 3) Perform the update
-  //     const updated = await prisma.property.update({
-  //       where: { id },
-  //       data: updates,
-  //     });
-
-  //     res.json(updated);
-  //   } catch (error) {
-  //     res.status(500).json({ message: 'Failed to update property', error: error.message });
-  //   }
-  // };
+  
 
   exports.updateProperty = [parser.array('images', 5), async (req, res) => {
     const { id } = req.params;
@@ -186,7 +146,7 @@
       }
 
       // Check if the logged-in user owns the property
-      if (property.userId !== req.user.id) {
+      if (property.userId !== req.user.id  && req.user.role !== 'ADMIN'  && req.user.role !== 'OWNER') {
         return res.status(403).json({ message: "Not authorized to delete this property" });
       }
 
@@ -221,3 +181,41 @@
 
 
 
+// controllers/propertyController.js
+
+exports.searchProperties = async (req, res) => {
+  const { where: aiWhere = {}, page = 1, limit = 20, url = {} } = req.body;
+
+  // build URL‐param filters if you ever want to fall back
+  const urlWhere = {};
+  if (url.location)  urlWhere.location = { contains: url.location, mode: 'insensitive' };
+  if (url.minPrice)  urlWhere.price    = { ...urlWhere.price, gte: Number(url.minPrice) };
+  if (url.maxPrice)  urlWhere.price    = { ...urlWhere.price, lte: Number(url.maxPrice) };
+  if (url.guests)    urlWhere.guestCount = { gte: Number(url.guests) };
+  if (url.amenities) urlWhere.amenities  = { hasEvery: url.amenities.split(',') };
+
+  // merge: AI filters override URL filters
+  const where = { ...urlWhere, ...aiWhere };
+
+  try {
+    const [ total, properties ] = await Promise.all([
+      prisma.property.count({ where }),
+      prisma.property.findMany({
+        where,
+        skip:  (page - 1) * limit,
+        take:  limit,
+        orderBy: { createdAt: 'desc' },
+      })
+    ]);
+
+    res.json({
+      page,
+      totalPages: Math.ceil(total / limit),
+      total,
+      properties,
+    });
+  } catch (err) {
+    console.error('Search failed:', err);
+    res.status(500).json({ error: 'Search failed' });
+  }
+};

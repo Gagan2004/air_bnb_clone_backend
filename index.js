@@ -64,5 +64,15 @@ app.use('/api/reviews',reviewRoutes)
 const aiSearchRoute = require('./routes/aiSearch.js');
 app.use('/api/ai-search', aiSearchRoute);
 
+
+const adminRoutes = require('./routes/adminRoutes');
+app.use('/api/admin', adminRoutes);
+
+
+// after your other `app.use(...)` calls
+const ownerRoutes = require('./routes/ownerRoutes');
+app.use('/api/owner', ownerRoutes);
+
+
     
 // eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4MTI2YTVjMTk3NjU5NmNmOWMyYTgyMyIsImlhdCI6MTc0NjAzNzM0MSwiZXhwIjoxNzQ2MTIzNzQxfQ.1lodWsf8v_NU3_6Li5xZ2nvY25Fx-mRF8AChDUk-hEM
