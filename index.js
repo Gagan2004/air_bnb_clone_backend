@@ -20,7 +20,16 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 
 
-app.use(cors());
+// app.use(cors());
+
+app.use(cors({
+  origin: [
+    "http://localhost:4000",       // local dev
+    "https://air-bnb-clone-frontend.vercel.app/" // production frontend
+  ],
+  credentials: true
+}));
+
 app.use(express.json());
 
 app.get('/', (req, res) => {
